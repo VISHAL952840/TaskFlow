@@ -1,8 +1,3 @@
-// <<<<<<< HEAD
-// // import jwt from "jsonwebtoken";
-// // import User from "../model/User.model.js";
-// =======
-// >>>>>>> 1b80bd1 (Rename User.model.js to user.model.js)
 
 import jwt from "jsonwebtoken";
 import User from "../model/user.model.js";
