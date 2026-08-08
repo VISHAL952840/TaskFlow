@@ -2,102 +2,79 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function Login() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+const Login = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
 
-    const { login } = useAuth();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    const navigate = useNavigate();
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+      
+    });
+  };
 
-    const handleLogin = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-        try {
-            setLoading(true);
-            setError("");
+    try {
+      await login(formData.email, formData.password);
+      navigate("/dashboard");
+    } catch (error) {
+      setError(error.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            await login(
-                email,
-                password
-            );
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1>Welcome Back 👋</h1>
+        <p>Login to manage your tasks</p>
 
-            navigate("/dashboard");
+        {error && <div className="error-message">{error}</div>}
 
-        } catch (error) {
-            setError(
-                error.response?.data?.message ||
-                "Login failed"
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
+        <form onSubmit={handleSubmit}>
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
 
-    return (
-        <div className="auth-page">
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
 
-            <div className="auth-card">
+          <button className="btn btn-primary full-width" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
 
-                <h1>
-                    Welcome Back 👋
-                </h1>
-
-                <p>
-                    Login to manage your tasks
-                </p>
-
-                {error && (
-                    <div className="error">
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleLogin}>
-
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) =>
-                            setEmail(e.target.value)
-                        }
-                        required
-                    />
-
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) =>
-                            setPassword(e.target.value)
-                        }
-                        required
-                    />
-
-                    <button type="submit">
-                        {loading
-                            ? "Logging in..."
-                            : "Login"}
-                    </button>
-
-                </form>
-
-                <p>
-                    Don't have an account?
-
-                    <Link to="/register">
-                        Register
-                    </Link>
-                </p>
-
-            </div>
-
-        </div>
-    );
-}
+        <p className="auth-footer">
+          Don't have an account? <Link to="/register">Register</Link>
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export default Login;

@@ -1,8 +1,15 @@
 import axios from "axios";
 
+// const api = axios.create({
+//   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
 const api = axios.create({
-    baseURL: "https://taskflow-hy01.onrender.com",
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
 });
+
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem("token");
 

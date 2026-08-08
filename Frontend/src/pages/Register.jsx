@@ -2,114 +2,99 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function Register() {
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+const Register = () => {
+  const { register } = useAuth();
+  const navigate = useNavigate();
 
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
-    const { register } = useAuth();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    const navigate = useNavigate();
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-    const handleRegister = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        try {
-            setLoading(true);
-            setError("");
+    setError("");
+    setLoading(true);
 
-            await register(
-                name,
-                email,
-                password
-            );
+    try {
+      await register(formData.name, formData.email, formData.password);
 
-            navigate("/dashboard");
+      // Registration ke baad directly Dashboard par jao
+      navigate("/dashboard");
+    } catch (error) {
+      setError(
+        error.response?.data?.message ||
+          "Registration failed. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        } catch (error) {
-            setError(
-                error.response?.data?.message ||
-                "Registration failed"
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1>Create Account 🚀</h1>
 
-    return (
-        <div className="auth-page">
+        <p>Start managing your tasks today</p>
 
-            <div className="auth-card">
+        {error && <div className="error-message">{error}</div>}
 
-                <h1>
-                    Create Account 🚀
-                </h1>
+        <form onSubmit={handleSubmit}>
+          <input
+            name="name"
+            placeholder="Full Name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
 
-                <p>
-                    Start managing your tasks today
-                </p>
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
 
-                {error && (
-                    <div className="error">
-                        {error}
-                    </div>
-                )}
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            minLength="8"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
 
-                <form onSubmit={handleRegister}>
+          <button
+            type="submit"
+            className="btn btn-primary full-width"
+            disabled={loading}
+          >
+            {loading ? "Creating Account..." : "Register"}
+          </button>
+        </form>
 
-                    <input
-                        type="text"
-                        placeholder="Full Name"
-                        value={name}
-                        onChange={(e) =>
-                            setName(e.target.value)
-                        }
-                        required
-                    />
-
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) =>
-                            setEmail(e.target.value)
-                        }
-                        required
-                    />
-
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) =>
-                            setPassword(e.target.value)
-                        }
-                        required
-                    />
-
-                    <button type="submit">
-                        {loading
-                            ? "Creating..."
-                            : "Register"}
-                    </button>
-
-                </form>
-
-                <p>
-                    Already have an account?
-
-                    <Link to="/login">
-                        Login
-                    </Link>
-                </p>
-
-            </div>
-
-        </div>
-    );
-}
+        <p className="auth-footer">
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export default Register;

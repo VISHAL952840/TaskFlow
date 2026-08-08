@@ -1,144 +1,116 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-function TaskModal({ task, onClose, onSave }) {
-    const [title, setTitle] = useState(task?.title || "");
-    const [description, setDescription] = useState(
-        task?.description || ""
-    );
-    const [dueDate, setDueDate] = useState(
-        task?.dueDate
-            ? task.dueDate.substring(0, 10)
-            : ""
-    );
-    const [priority, setPriority] = useState(
-        task?.priority || "medium"
-    );
-    const [category, setCategory] = useState(
-        task?.category || "general"
-    );
-    const [status, setStatus] = useState(
-        task?.status || "TO-DO"
-    );
+const initialState = {
+  title: "",
+  description: "",
+  dueDate: "",
+  priority: "medium",
+  category: "general",
+  status: "To-Do",
+};
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+const TaskModal = ({ isOpen, onClose, onSubmit, task }) => {
+  const [formData, setFormData] = useState(initialState);
 
-        onSave({
-            title,
-            description,
-            dueDate,
-            priority,
-            category,
-            status,
-        });
-    };
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        title: task.title || "",
+        description: task.description || "",
+        dueDate: task.dueDate
+          ? new Date(task.dueDate).toISOString().split("T")[0]
+          : "",
+        priority: task.priority || "medium",
+        category: task.category || "general",
+        status: task.status || "To-Do",
+      });
+    } else {
+      setFormData(initialState);
+    }
+  }, [task, isOpen]);
 
-    return (
-        <div className="modal-overlay">
+  if (!isOpen) return null;
 
-            <div className="modal">
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-                <h2>
-                    {task ? "Edit Task" : "Create Task"}
-                </h2>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await onSubmit(formData);
+    setFormData(initialState);
+  };
 
-                <form onSubmit={handleSubmit}>
-
-                    <input
-                        type="text"
-                        placeholder="Task title"
-                        value={title}
-                        onChange={(e) =>
-                            setTitle(e.target.value)
-                        }
-                        required
-                    />
-
-                    <textarea
-                        placeholder="Description"
-                        value={description}
-                        onChange={(e) =>
-                            setDescription(e.target.value)
-                        }
-                        required
-                    />
-
-                    <input
-                        type="date"
-                        value={dueDate}
-                        onChange={(e) =>
-                            setDueDate(e.target.value)
-                        }
-                    />
-
-                    <select
-                        value={priority}
-                        onChange={(e) =>
-                            setPriority(e.target.value)
-                        }
-                    >
-                        <option value="low">
-                            Low
-                        </option>
-
-                        <option value="medium">
-                            Medium
-                        </option>
-
-                        <option value="high">
-                            High
-                        </option>
-                    </select>
-
-                    <input
-                        type="text"
-                        placeholder="Category"
-                        value={category}
-                        onChange={(e) =>
-                            setCategory(e.target.value)
-                        }
-                    />
-
-                    <select
-                        value={status}
-                        onChange={(e) =>
-                            setStatus(e.target.value)
-                        }
-                    >
-                        <option value="TO-DO">
-                            To Do
-                        </option>
-
-                        <option value="In Progress">
-                            In Progress
-                        </option>
-
-                        <option value="Done">
-                            Done
-                        </option>
-                    </select>
-
-                    <div className="modal-buttons">
-
-                        <button type="submit">
-                            {task ? "Update Task" : "Create Task"}
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={onClose}
-                        >
-                            Cancel
-                        </button>
-
-                    </div>
-
-                </form>
-
-            </div>
-
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h2>{task ? "Edit Task" : "Create Task"}</h2>
+          <button onClick={onClose} className="close-btn">×</button>
         </div>
-    );
-}
+
+        <form onSubmit={handleSubmit}>
+          <input
+            name="title"
+            placeholder="Task title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+          />
+
+          <textarea
+            name="description"
+            placeholder="Description"
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+
+          <label>Due Date</label>
+          <input
+            type="date"
+            name="dueDate"
+            value={formData.dueDate}
+            onChange={handleChange}
+          />
+
+          <select
+            name="priority"
+            value={formData.priority}
+            onChange={handleChange}
+          >
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="high">High Priority</option>
+          </select>
+
+          <input
+            name="category"
+            placeholder="Category"
+            value={formData.category}
+            onChange={handleChange}
+          />
+
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+          >
+            <option value="To-Do">To-Do</option>
+            <option value="In Progress">In Progress</option>
+             <option value="Done">Done</option>
+          </select>
+
+          <button className="btn btn-primary" type="submit">
+            {task ? "Update Task" : "Create Task"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 export default TaskModal;

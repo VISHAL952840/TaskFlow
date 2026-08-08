@@ -1,10 +1,20 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import { AuthProvider } from "./context/AuthContext";
 import "./index.css";
-import App from "./App.jsx";
+//import {Toaster} from "react-hot-toast";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-createRoot(document.getElementById("root")).render(
-    <StrictMode>
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
         <App />
-    </StrictMode>
+        <ToastContainer position="top-right" autoClose={2000} theme="colored" />
+      </AuthProvider>
+    </BrowserRouter>
+  </React.StrictMode>,
 );
