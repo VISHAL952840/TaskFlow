@@ -1,23 +1,32 @@
 const errorHandler = (err, req, res, next) => {
-    let statusCode = res.statusCode === 200 ? 500 : res.statusCode
+  // if a status code is not set , default set to 500 (bad server)
+  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  let message = err.message;
 
-    if (err.name === "CastError" && err.kind === "objectId") {
-        statusCode = 404;
-        message: "Resources not found"
-    }
+  // Agar koi objectId error ho toh
+  if (err.name === "CastError" && err.kind === "ObjectId") {
+    statusCode = 404;
+    message= "Resource not found";
+  }
 
-    if (err.name === "validationError") {
-        statusCode = 400
-        message: object.values(err.errors)
-            .map((e) => e.message)
-            .json(",");
-    }
+  // kisi bhi schema mae validationError jo
+  if(err.name==="ValidationError"){
+    statusCode=400;
+    message= Object.values(err.errors)
+    .map((e)=> e.message)
+    .join(", ");
+  }
+  // duplicates value on unique field
+  if(err.code===11000){
+    statusCode=400;
+    message=`Duplicate value for: ${Object.keys(err.keyValue).join(", ")}`;
+  }
 
-    if (err.code === 11000) {
-        statusCode = 400;
-        message: "Duplicate email entered"
-    }
+  res.status(statusCode).json({
+    message,
 
-}
+    stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+  });
+};
 
 export default errorHandler;

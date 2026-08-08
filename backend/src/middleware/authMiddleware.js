@@ -1,52 +1,39 @@
-
 import jwt from "jsonwebtoken";
-import User from "../model/user.model.js";
+import User from "../model/User.model.js";
 
-const protect = async(req, res, next) => {
-    try {
-        console.log("========== AUTH DEBUG ==========");
-        console.log("Headers:", req.headers);
+const protect = async (req, res, next) => {
+  try {
+    let token;
 
-        const authHeader = req.headers.authorization;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
 
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return res.status(401).json({
-                message: "Not Authorized, No Token",
-            });
-        }
+      const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-        const token = authHeader.replace("Bearer ", "").trim();
+      req.user = await User.findById(decoded.id).select("-password");
 
-        console.log("TOKEN =", token);
-        console.log("SECRET =", process.env.JWT_SECRET_KEY);
-
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET_KEY
-        );
-
-        console.log("DECODED =", decoded);
-
-        const user = await User.findById(decoded.id).select("-password");
-        console.log("USER =", user);
-
-        if (!user) {
-            return res.status(401).json({
-                message: "Invalid Token - User Not Found",
-            });
-        }
-
-        req.user = user;
-
-        next();
-    } catch (error) {
-        console.log("AUTH ERROR =", error);
-
+      if (!req.user) {
         return res.status(401).json({
-            message: "Not Authorized Token Failed",
-            error: error.message,
+          message: "User not found",
         });
+      }
+
+      next();
+    } else {
+      return res.status(401).json({
+        message: "Not Authorized, No Token",
+      });
     }
+  } catch (error) {
+    console.error("Auth Middleware Error:", error);
+
+    return res.status(401).json({
+      message: "Not Authorized",
+    });
+  }
 };
 
 export default protect;

@@ -1,165 +1,108 @@
-// 
 import Task from "../model/Task.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
-
 export const findOwnedTask = async (taskId, userId, res) => {
-    const task = await Task.findById(taskId);
+  const task = await Task.findById(taskId);
+  if (!task) {
+    res.status(404);
+    throw new Error("Task Not Found");
+  }
 
-    if (!task) {
-        res.status(404);
-        throw new Error("Task Not Found");
-    }
-
-    if (task.user.toString() !== userId.toString()) {
-        res.status(403);
-        throw new Error("Not authorized to access this task");
-    }
-
-    return task;
+  if (task.user.toString() !== userId) {
+    res.status(403);
+    throw new Error("Not authenticated for edit the task");
+  }
+  return task;
 };
-
-// Create Task
 export const createTask = asyncHandler(async (req, res) => {
-    const { title, description, dueDate, priority, category, status } = req.body;
+  const { title, description, dueDate, priority, category, status } = req.body;
 
-    const taskCreated = await Task.create({
-        title,
-        description,
-        dueDate,
-        priority,
-        category,
-        status,
-        user: req.user._id,
-    });
+  const task = await Task.create({
+    title,
+    description,
+    dueDate,
+    priority,
+    category,
+    status,
+    user: req.user.id,
+  });
 
-    res.status(201).json(taskCreated);
+  res.json(task);
 });
-
-// Get All Tasks
 export const getTasks = asyncHandler(async (req, res) => {
-    const { status, priority, search, sort } = req.query;
+  const { status, priority, search, sort } = req.query;
+  const query = { user: req.user.id };
 
-    const query = {
-        user: req.user._id,
-    };
+  if (status) query.status = status;
+  if (priority) query.priority = priority;
+  if (search) query.title = { $regex: search, $options: "i" };
 
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
+  let sortBy = "-createdAt";
+  if (sort === "oldest") sortBy = "createdAt";
+  if (sort === "dueDate") sortBy = "dueDate";
+  if (sort === "priority") sortBy = "priority";
 
-    if (search) {
-        query.title = {
-            $regex: search,
-            $options: "i",
-        };
-    }
-
-    let sortBy = "-createdAt";
-
-    if (sort === "oldest") sortBy = "createdAt";
-    if (sort === "dueDate") sortBy = "dueDate";
-    if (sort === "priority") sortBy = "priority";
-
-    const tasks = await Task.find(query).sort(sortBy);
-
-    res.status(200).json({
-        tasks,
-    });
+  const tasks = await Task.find(query).sort(sortBy);
+  res.status(200).json({
+    tasks,
+  });
 });
 
-// Get Single Task
 export const getTask = asyncHandler(async (req, res) => {
-    const task = await findOwnedTask(
-        req.params.id,
-        req.user._id,
-        res
-    );
-
-    res.status(200).json({
-        task,
-    });
+  const task = await findOwnedTask(req.params.id, req.user.id, res);
+  res.status(200).json({
+    task,
+  })
 });
 
-// Update Task
 export const updateTask = asyncHandler(async (req, res) => {
-    await findOwnedTask(
-        req.params.id,
-        req.user._id,
-        res
-    );
+  await findOwnedTask(req.params.id, req.user.id, res);
+  const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true,
+  })
 
-    const task = await Task.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        {
-            new: true,
-            runValidators: true,
-        }
-    );
+  res.status(200).json({
+    task,
+  })
+})
 
-    res.status(200).json({
-        task,
-    });
-});
-
-// Delete Task
 export const deleteTask = asyncHandler(async (req, res) => {
-    const task = await findOwnedTask(
-        req.params.id,
-        req.user._id,
-        res
-    );
+  const task = await findOwnedTask(req.params.id, req.user.id, res);
+  await task.deleteOne();
+  res.status(200).json({
+    message: "Task Deleted",
+  })
+})
 
-    await task.deleteOne();
-
-    res.status(200).json({
-        message: "Task Deleted Successfully",
-    });
-});
-
-// Toggle Task
 export const toggleTask = asyncHandler(async (req, res) => {
-    const task = await findOwnedTask(
-        req.params.id,
-        req.user._id,
-        res
-    );
+  const task = await findOwnedTask(req.params.id, req.user.id, res);
 
-    task.completed = !task.completed;
-    task.status = task.completed ? "Done" : "TO-DO";
+  task.completed = !task.completed;
+  task.status = task.completed ? "Done" : "To-Do";
+  await task.save();
 
-    await task.save();
+  res.status(200).json({
+    message: "Task toggled",
+    task,
+  })
+})
 
-    res.status(200).json({
-        message: "Task Toggled Successfully",
-        task,
-    });
-});
-
-// Stats
 export const getStats = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
+  const userId = req.user.id;
 
-    const total = await Task.countDocuments({
-        user: userId,
-    });
+  const total = await Task.countDocuments({ user: userId });
+  const completed = await Task.countDocuments({user:userId,completed:true})
+  const pending=total-completed
+  const overdue= await Task.countDocuments({
+    user:userId,
+    completed:false,
+    dueDate:{$lt:new Date()}
+  })
 
-    const completed = await Task.countDocuments({
-        user: userId,
-        completed: true,
-    });
-
-    const pending = total - completed;
-
-    const overdue = await Task.countDocuments({
-        user: userId,
-        completed: false,
-        dueDate: { $lt: new Date() },
-    });
-
-    res.status(200).json({
-        total,
-        completed,
-        pending,
-        overdue,
-    });
-});
+  res.status(200).json({
+    total,
+    completed,
+    pending,
+    overdue
+  })
+})
