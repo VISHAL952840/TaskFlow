@@ -1,4 +1,4 @@
-import User from "../model/User.model.js";
+import User from "../model/user.model.js";
 import generateToken from "../utils/generateToken.js";
 import cloudinary from "../config/cloudinary.js";
 
